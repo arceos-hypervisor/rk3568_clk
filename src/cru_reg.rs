@@ -1,0 +1,318 @@
+//!  Clock and Reset Unit(CRU)
+//!
+//! # Overview
+//!
+//! The CRU is an APB slave module that is designed for generating all of the internal and 
+//! system clocks, resets in the chip. CRU generates system clocks from PLL output clock or 
+//! external clock source, and generates system reset from external power-on-reset, watchdog 
+//! timer reset or software reset or temperature sensor.
+//! The CRU comprises with: 
+//! - PLL 
+//! - Register configuration unit 
+//! - Clock generate unit 
+//! - Reset generate unit 
+//! 
+//! # Function Description
+//! 
+//! There are 6 fractional PLLs in RK3568: APLL, PPLL, HPLL, DPLL, CPLL and GPLL.There are 
+//! also 3 integer PLLs: MPLL, NPLL and VPLL. Each PLL can only receive 24MHz oscillator as 
+//! input reference clock and can be set to three work modes: normal mode, slow mode and 
+//! deep slow mode. When power on or changing PLL setting, we must program PLL into slow 
+//! mode or deep slow mode. 
+//! To maximize the flexibility, some of clocks can select divider source from multiple PLLs.To 
+//! provide some specific frequency, another solution is integrated: fractional divider. Divfree50
+//! divider and divfreeNP5 divider are also provided for some modules.All clocks can be gated 
+//! by software.
+
+use core::ptr::{read_volatile, write_volatile};
+use crate::cru_bit_field::*;
+
+// Clock and Reset Unit (CRU) register map
+#[repr(C)]
+struct RegMap {
+    cru_apll_con: [u32; 5],             // APLL 寄存器 /* 0x0000 ~ 0x0014 */
+    reserved0: [u32; 3],                // 保留
+    cru_dpll_con: [u32; 5],             // GPLL 寄存器 /* 0x0020 ~ 0x0034 */
+    reserved1: [u32; 3],                // 保留
+    cru_gpll_con: [u32; 5],             // CPLL 寄存器 /* 0x0040 ~ 0x0054 */
+    reserved2: [u32; 3],                // 保留
+    cru_cpll_con: [u32; 5],             // DPLL 寄存器 /* 0x0060 ~ 0x0074 */
+    reserved3: [u32; 3],                // 保留
+    cru_npll_con: [u32; 2],             // NPLL 寄存器 /* 0x0080 ~ 0x0088 */
+    reserved4: [u32; 6],                // 保留
+    cru_vpll_con: [u32; 2],             // VPLL 寄存器 /* 0x00A0 ~ 0x00A8 */
+    reserved5: [u32; 6],                // 保留
+    
+    cru_mode_con00: u32,                // 模式控制寄存器   /* 0x00C0 */
+    cru_misc_con: [u32; 3],             // 杂项控制寄存器 
+    cru_glb_cnt_th: u32,                // 全局计数阈值     /*  */
+    cru_glb_srst_fst: u32,              // 全局软复位
+    cru_glb_srsr_snd: u32,              // 全局软复位
+    cru_glb_rst_con: u32,               // 全局软复位阈值
+    cru_glb_rst_st: u32,                // 全局软复位状态
+    
+    reserved6: [u32; 7],                // 保留
+    clksel_con: [u32; 85],              // 时钟选择寄存器
+    reserved7: [u32; 43],               // 保留
+    clk_gate_con: [u32; 36],            // 时钟门控寄存器
+    reserved8: [u32; 28],               // 保留
+    
+    cru_softrst_con: [u32; 30],         // 软复位寄存器
+    reserved9: [u32; 2],                // 保留
+    cru_ssgtbl: [u32; 32],              // SSG表寄存器
+
+    cru_autocs_core_con: [u32; 2],
+    cru_autocs_gpu_con: [u32; 2],
+    cru_autocs_bus_con: [u32; 2],
+    cru_autocs_top_con: [u32; 2],
+    cru_autocs_rkvdec_con: [u32; 2],
+    cru_autocs_rkvenc_con: [u32; 2],
+    cru_autocs_vpu_con: [u32; 2],
+    cru_autocs_peri_con: [u32; 2],
+    cru_autocs_gpll_con: [u32; 2],
+    cru_autocs_cpll_con: [u32; 2],
+
+    reserved10: [u32; 12],              // 保留
+    sdmmc0_con: [u32; 2],               // SDMMC0 控制寄存器
+    sdmmc1_con: [u32; 2],               // SDMMC1 控制寄存器
+    sdmmc2_con: [u32; 2],               // SDMMC2 控制寄存器
+    emmc_con: [u32; 2],                 // eMMC 控制寄存器
+}
+
+pub struct CRU {
+    reg: *mut RegMap,
+}
+
+impl CRU {
+    /// Creates a new instance with the given base address.
+    ///
+    /// # Arguments
+    /// * `base_addr` - The base memory address of the CRU (Control Register Unit) registers.
+    ///                Must be a valid, aligned address for hardware access.
+    ///
+    /// # Safety
+    /// This is unsafe because:
+    /// - The caller must ensure `base_addr` points to valid CRU hardware registers
+    /// - The address must be properly aligned for `RegMap` type access
+    /// - Concurrent access to the same hardware registers may cause UB
+    ///
+    /// # Example
+    /// ```no_run
+    /// // Safe wrapper would verify address validity
+    /// let cru = unsafe { CRU::new(0xFF00_0000) };
+    /// ```
+    pub fn new(base_addr: u64) -> Self {
+        Self {
+            reg: base_addr as *mut RegMap,
+        }
+    }
+
+    /// Enable apll_bypass
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// - None
+    pub fn cru_enable_apll_bypass(&mut self) {
+        unsafe {
+            let addr = &(*self.reg).cru_apll_con[0] as *const u32 as u64;
+            let current = read_volatile(addr as *const u64) as u32;
+            self.write_reg(addr, current | (CRU_APLL_WR_EN_MASK << CRU_APLL_WR_EN_POS ) | CRU_APLL_WR_EN);
+        }
+    }
+
+    /// Disable apll_bypass
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// - None
+    pub fn cru_disable_appll_bypass(&mut self) {
+        unsafe {
+            let addr = &(*self.reg).cru_apll_con[0] as *const u32 as u64;
+            let current = self.read_reg(addr);
+            self.write_reg(addr, (current | (CRU_APLL_WR_EN_MASK << CRU_APLL_WR_EN_POS )) & !CRU_APLL_WR_EN);
+        }
+    }
+
+    /// Check the apll_bypass is enabled or not
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// - true if apll_bypass is enabled
+    /// - false if apll_bypass is disabled
+    pub fn cru_apll_is_bypass(&self) -> bool {
+        unsafe {
+            let addr = &(*self.reg).cru_apll_con[0] as *const u32 as u64;
+            self.read_reg(addr) & CRU_APLL_BYPASS == CRU_APLL_BYPASS
+        }
+    }
+
+    /// Set cclk_emmc clock
+    ///
+    /// # Arguments
+    /// One of the following values
+    /// - CRU_CLKSEL_CCLK_EMMC_XIN_SOC0_MUX
+    /// - CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M
+    /// - CRU_CLKSEL_CCLK_EMMC_GPL_DIV_150M
+    /// - CRU_CLKSEL_CCLK_EMMC_CPL_DIV_100M
+    /// - CRU_CLKSEL_CCLK_EMMC_CPL_DIV_50M
+    /// - CRU_CLKSEL_CCLK_EMMC_SOC0_375K
+    ///
+    /// # Returns
+    /// - None
+    pub fn cru_clksel_set_cclk_emmc(&self, sel: u32) {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            let current = self.read_reg(addr);
+            self.write_reg(addr, (current & !CRU_CLKSEL_CCLK_EMMC_MASK) | (CRU_CLKSEL_CCLK_EMMC_MASK << CRU_CLKSEL_WR_EN_POS ) | sel);
+        }
+    }
+
+    /// Get cclk_emmc clock
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// One of the following values
+    /// - CRU_CLKSEL_CCLK_EMMC_XIN_SOC0_MUX
+    /// - CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M
+    /// - CRU_CLKSEL_CCLK_EMMC_GPL_DIV_150M
+    /// - CRU_CLKSEL_CCLK_EMMC_CPL_DIV_100M
+    /// - CRU_CLKSEL_CCLK_EMMC_CPL_DIV_50M
+    /// - CRU_CLKSEL_CCLK_EMMC_SOC0_375K
+    pub fn cru_clksel_get_cclk_emmc(&self) -> u32 {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            self.read_reg(addr) & CRU_CLKSEL_CCLK_EMMC
+        }
+    }
+
+    /// Set bclk_emmc clock
+    ///
+    /// # Arguments
+    /// One of the following values
+    /// - CRU_CLKSEL_BCLK_EMMC_GPL_DIV_200M
+    /// - CRU_CLKSEL_BCLK_EMMC_GPL_DIV_150M
+    /// - CRU_CLKSEL_BCLK_EMMC_CPL_DIV_125M
+    ///
+    /// # Returns
+    /// - None
+    pub fn cru_clksel_set_bclk_emmc(&self, sel: u32) {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            let current = self.read_reg(addr);
+            self.write_reg(addr, (current & !CRU_CLKSEL_BCLK_EMMC_MASK) | (CRU_CLKSEL_BCLK_EMMC_MASK << CRU_CLKSEL_WR_EN_POS ) | sel);
+        }
+    }
+
+    /// Get bclk_emmc clock
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// One of the following values
+    /// - CRU_CLKSEL_BCLK_EMMC_GPL_DIV_200M
+    /// - CRU_CLKSEL_BCLK_EMMC_GPL_DIV_150M
+    /// - CRU_CLKSEL_BCLK_EMMC_CPL_DIV_125M
+    pub fn cru_clksel_get_bclk_emmc(&self) -> u32 {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            self.read_reg(addr) & CRU_CLKSEL_BCLK_EMMC
+        }
+    }
+
+    /// Set sclk_sfc clock
+    ///
+    /// # Arguments
+    /// One of the following values
+    /// - CRU_CLKSEL_SCLK_SFC_XIN_SOC0_MUX
+    /// - CRU_CLKSEL_SCLK_SFC_CPL_DIV_50M
+    /// - CRU_CLKSEL_SCLK_SFC_GPL_DIV_75M
+    /// - CRU_CLKSEL_SCLK_SFC_GPL_DIV_100M
+    /// - CRU_CLKSEL_SCLK_SFC_CPL_DIV_125M
+    /// - CRU_CLKSEL_SCLK_SFC_GPL_DIV_150M
+    ///
+    /// # Returns
+    /// - None
+    pub fn cru_clksel_set_sclk_sfc(&self, sel: u32) {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            let current = self.read_reg(addr);
+            self.write_reg(addr, (current & !CRU_CLKSEL_SCLK_SFC_MASK) | (CRU_CLKSEL_SCLK_SFC_MASK << CRU_CLKSEL_WR_EN_POS ) | sel);
+        }
+    }
+
+    /// Get sclk_sfc clock
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// One of the following values
+    /// - CRU_CLKSEL_SCLK_SFC_XIN_SOC0_MUX
+    /// - CRU_CLKSEL_SCLK_SFC_CPL_DIV_50M
+    /// - CRU_CLKSEL_SCLK_SFC_GPL_DIV_75M
+    /// - CRU_CLKSEL_SCLK_SFC_GPL_DIV_100M
+    /// - CRU_CLKSEL_SCLK_SFC_CPL_DIV_125M
+    /// - CRU_CLKSEL_SCLK_SFC_GPL_DIV_150M
+    pub fn cru_clksel_get_sclk_sfc(&self) -> u32 {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            self.read_reg(addr) & CRU_CLKSEL_SCLK_SFC
+        }
+    }
+
+    /// set nclk_nandc clock
+    ///
+    /// # Arguments
+    /// One of the following values
+    /// - CRU_CLKSEL_NCLK_NANDC_GPL_DIV_200M
+    /// - CRU_CLKSEL_NCLK_NANDC_GPL_DIV_150M
+    /// - CRU_CLKSEL_NCLK_NANDC_CPL_DIV_125M
+    /// - CRU_CLKSEL_NCLK_NANDC_XIN_SOC0_MUX
+    ///
+    /// # Returns
+    /// - None
+    pub fn cru_clksel_set_nclk_nanc(&self, sel: u32) {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            let current = self.read_reg(addr);
+            self.write_reg(addr, (current & !CRU_CLKSEL_NCLK_NANDC_MASK) | (CRU_CLKSEL_NCLK_NANDC_MASK << CRU_CLKSEL_WR_EN_POS ) | sel);
+        }
+    }
+
+    /// Get nclk_nandc clock
+    ///
+    /// # Arguments
+    /// - None
+    ///
+    /// # Returns
+    /// One of the following values
+    /// - CRU_CLKSEL_NCLK_NANDC_GPL_DIV_200M
+    /// - CRU_CLKSEL_NCLK_NANDC_GPL_DIV_150M
+    /// - CRU_CLKSEL_NCLK_NANDC_CPL_DIV_125M
+    /// - CRU_CLKSEL_NCLK_NANDC_XIN_SOC0_MUX
+    pub fn cru_clksel_get_nclk_nanc(&self) -> u32 {
+        unsafe {
+            let addr = &(*self.reg).clksel_con[28] as *const u32 as u64;
+            self.read_reg(addr) & CRU_CLKSEL_NCLK_NANDC
+        }
+    }
+}
+
+impl CRU {
+    fn read_reg(&self, addr: u64) -> u32 {
+        unsafe { read_volatile(addr as *const u64) as u32 }
+    }
+
+    fn write_reg(&self, addr: u64, value: u32) {
+        unsafe { write_volatile(addr as *mut u32, value); }
+    }
+}

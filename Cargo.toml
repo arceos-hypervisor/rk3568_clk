@@ -1,0 +1,22 @@
+[package]
+name = "rk3568_clk"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fdt-parser = "0.4"
+aarch64-cpu = "10.0"
+kspin = "0.1"
+log = "0.4"
+bare-test = "0.4.1"
+
+[dev-dependencies]
+bare-test = "0.4.1"
+byte-unit = { version = "5.1.6", default-features = false, features = ["byte"] }
+
+[build-dependencies]
+bare-test-macros = "0.2"
+
+[[test]]
+name = "test"
+harness = false
