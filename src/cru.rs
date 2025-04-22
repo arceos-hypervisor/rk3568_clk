@@ -27,21 +27,9 @@
 
 use core::ptr::{read_volatile, write_volatile};
 
-// // the bit feild for CRU_APLL_CON0
-// pub const CRU_APLL_WR_EN_POS: u32 = 16;
-// pub const CRU_APLL_WR_EN_MASK: u32 = 0x01 << CRU_APLL_WR_EN_POS;
-// pub const CRU_APLL_WR_EN: u32 = CRU_APLL_WR_EN_MASK;
-// pub const CRU_APLL_BYPASS_POS: u32 = 15;
-// pub const CRU_APLL_BYPASS_MASK: u32 = 0x01 << CRU_APLL_BYPASS_POS;
-// pub const CRU_APLL_BYPASS: u32 = CRU_APLL_BYPASS_MASK;
-// pub const CRU_APLL_POSTDIV1_POS: u32 = 12;
-// pub const CRU_APLL_POSTDIV1_MASK: u32 = 0x03 << CRU_APLL_POSTDIV1_POS;
-// pub const CRU_APLL_POSTDIV1: u32 = CRU_APLL_POSTDIV1_MASK;
-// pub const CRU_APLL_FBDIV_POS: u32 = 0x00;
-// pub const CRU_APLL_FBDIV_MASK: u32 = 0xfff << CRU_APLL_POSTDIV1_POS;
-// pub const CRU_APLL_FBDIV: u32 = CRU_APLL_FBDIV_MASK;
-
 /// Clock and Reset Unit (CRU) register map
+/// this struct defines the layout of the CRU registers in memory.
+/// It is used to access the CRU registers in a safe and efficient manner.
 #[repr(C)]
 struct RegMap {
     cru_apll_con: [u32; 5],             // APLL 寄存器 /* 0x0000 ~ 0x0014 */
@@ -94,6 +82,9 @@ struct RegMap {
 }
 
 /// Clock and Reset Unit (CRU)
+/// This struct provides a safe interface to the CRU registers.
+/// It allows reading and writing to the registers, as well as setting and getting
+/// specific bits in the registers.
 pub struct CRU {
     reg: *mut RegMap,
 }
