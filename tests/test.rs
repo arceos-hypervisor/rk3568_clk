@@ -9,8 +9,9 @@ mod tests {
     use bare_test::{globals::{global_val, PlatformInfoKind}, mem::iomap, platform::page_size, println};
     use fdt_parser::PciSpace;
     use log::{debug, info, warn};
-    use rk3568_clk::CRU;
-    use rk3568_clk::cru_bit_field::*;
+    use rk3568_clk::cru::CRU;
+    use rk3568_clk::cru::cru_clksel_con28_bits::{*};
+    use rk3568_clk::cru::cru_gate_con09_bits::{*};
 
     #[test]
     fn test_platform() {
@@ -56,14 +57,7 @@ mod tests {
         let syscon_addr = syscon_addr_ptr.as_ptr() as usize;
         info!("EMMC addr: {:#x}, Clock addr: {:#x}, Syscon addr: {:#x}", emmc_addr, clk_addr, syscon_addr);
 
-        let mut clock = CRU::new(clk_addr as u64);
-        info!("clock.cru_apll_is_bypass(): {}", clock.cru_apll_is_bypass());
-        info!("clock.cru_enable_apll_bypass()");
-        clock.cru_enable_apll_bypass();
-        info!("clock.cru_apll_is_bypass(): {}", clock.cru_apll_is_bypass());
-        info!("clock.cru_disable_appll_bypass()");
-        clock.cru_disable_appll_bypass();
-        info!("clock.cru_apll_is_bypass(): {}", clock.cru_apll_is_bypass());
+        let clock = CRU::new(clk_addr as u64);
         clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M);
         info!("clock.cru_clksel_get_cclk_emmc(): {:#x}", clock.cru_clksel_get_cclk_emmc());
         clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_GPL_DIV_150M);

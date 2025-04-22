@@ -32,11 +32,4 @@
 #![no_main]
 #![feature(alloc_error_handler)]
 
-mod cru_reg;
-pub mod cru_bit_field;
-
-pub use cru_reg::CRU as CRU;
-
-pub fn init() {
-    // Initialize the system
-}
+pub mod cru;
