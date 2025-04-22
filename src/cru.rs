@@ -124,11 +124,24 @@ impl CRU {
     }
 
     /// Reads a 32-bit register at the given address.
+    ///
+    /// # Arguments
+    /// * None
+    /// 
+    /// # Returns
+    /// - The value read from the register.
     fn read_reg(&self, addr: u64) -> u32 {
         unsafe { read_volatile(addr as *const u64) as u32 }
     }
 
     /// Writes a 32-bit value to the register at the given address.
+    ///
+    /// # Arguments
+    /// * `value` - The value to write to the register.
+    /// * `addr` - The address of the register to write to.
+    /// 
+    /// # Returns
+    /// - None
     fn write_reg(&self, addr: u64, value: u32) {
         unsafe { write_volatile(addr as *mut u32, value); }
     }
