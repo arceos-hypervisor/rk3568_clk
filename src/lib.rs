@@ -20,6 +20,23 @@
 //! the clock signals for the CPU, GPU, DSP, and other peripherals. The CRU is also
 //! responsible for managing the reset signals for the various components in the RK3568 SoC.
 //!
+//! # About the driver
+//! 
+//! The driver is designed to be used in a no_std environment, and does not depend on any
+//! external libraries or crates. The driver is designed to be used in a no_std environment,
+//! and does not depend on any external libraries or crates. The driver is designed to be
+//! used in a no_std environment, and does not depend on any external libraries or crates.
+//! 
+//! ## Usage
+//! 
+//! ```rust
+//! use rk3568_clk::cru::CRU;
+//! use rk3568_clk::cru::cru_clksel_con28_bits::{*};
+//! use rk3568_clk::cru::cru_gate_con09_bits::{*};
+//! 
+//! let clock = CRU::new(clk_addr as u64);
+//! clock.clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M);
+//! ```
 
 #![no_std]
 #![no_main]

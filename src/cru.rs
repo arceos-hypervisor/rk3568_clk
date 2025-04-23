@@ -1,6 +1,6 @@
-//!  Clock and Reset Unit(CRU)
+//!  Basic interface for reading and writing CRU registers
 //!
-//! # Overview
+//! # Clock and Reset Unit(CRU)
 //!
 //! The CRU is an APB slave module that is designed for generating all of the internal and 
 //! system clocks, resets in the chip. CRU generates system clocks from PLL output clock or 
@@ -11,7 +11,7 @@
 //! - CRU, used for general system except always on system, with base address 0xFDD20000 
 //! - SCRU, used for general secure system except always on system, with base address 0xFDD10000
 //! 
-//! # Block Diagram
+//! ## Block Diagram
 //! 
 //! The CRU comprises with: 
 //! - PLL 
@@ -19,18 +19,54 @@
 //! - Clock generate unit 
 //! - Reset generate unit 
 //! 
-//! # Function Description
+//! ## Function Description
 //! 
-//! There are 6 fractional PLLs in RK3568: APLL, PPLL, HPLL, DPLL, CPLL and GPLL.There are 
+//! There are 6 fractional PLLs in RK3568: APLL, PPLL, HPLL, DPLL, CPLL and GPLL. There are 
 //! also 3 integer PLLs: MPLL, NPLL and VPLL. Each PLL can only receive 24MHz oscillator as 
 //! input reference clock and can be set to three work modes: normal mode, slow mode and 
-//! deep slow mode. When power on or changing PLL setting, we must program PLL into slow 
-//! mode or deep slow mode. 
+//! deep slow mode.
 //! 
-//! To maximize the flexibility, some of clocks can select divider source from multiple PLLs.To 
+//! To maximize the flexibility, some of clocks can select divider source from multiple PLLs. To 
 //! provide some specific frequency, another solution is integrated: fractional divider. Divfree50
 //! divider and divfreeNP5 divider are also provided for some modules.All clocks can be gated 
 //! by software.
+//! 
+//! # About the driver
+//! 
+//! The driver is designed to be used in a no_std environment, and does not depend on any
+//! external libraries or crates. The driver is designed to be used in a no_std environment,
+//! and does not depend on any external libraries or crates. The driver is designed to be
+//! used in a no_std environment, and does not depend on any external libraries or crates.
+//! 
+//! ## Register map
+//! 
+//! There are a total of 240 registers in the CRU, each 4 bytes wide. The register map is 
+//! defined in the `RegMap` struct. The register map is used to access
+//! the CRU registers in a safe and efficient manner. The register map is defined as a
+//! `#[repr(C)]` struct, which means that the layout of the struct is the same as the
+//! layout of the registers in memory. 
+//! 
+//! ## Register access
+//! 
+//! The driver provides a safe interface to the CRU registers. It allows reading and
+//! writing to the registers, as well as setting and getting specific bits in the
+//! registers. The driver uses the `read_volatile` and `write_volatile` functions to
+//! read and write to the registers. These functions are used to ensure that the
+//! compiler does not optimize away the read and write operations. The driver also
+//! provides functions to set and clear specific bits in the registers. These functions
+//! are used to ensure that the compiler does not optimize away the read and write
+//! operations.
+//! 
+//! For one register, the follwing modules are defined:
+//! - `pub mod cru_*_bits`：define the bit field definitions for the CRU registers.
+//! - `impl CRU {}` : implemented read, write, and other operation interfaces corresponding to each register.
+//! 
+//! Some registers can not be accessed by the driver due to soc work mode. Otherwise, 
+//! Reading and writing certain registers requires special processing procedures. 
+//! For example,When power on or changing PLL setting, we must program PLL into slow mode or deep slow mode.
+//! 
+//! This module provides a basic interface for reading and writing CRU registers. DO NOT include
+//! special processing procedures, instead, the user should implement the special processing procedures
 
 use core::ptr::{read_volatile, write_volatile};
 
@@ -97,7 +133,9 @@ pub struct CRU {
     reg: *mut RegMap,
 }
 
-/// Implementing the CRU struct
+/// Implementing the most basic interface
+/// - Creates a new instance of the CRU struct.
+/// - Based function to read and write registers.
 impl CRU {
     /// Creates a new instance with the given base address.
     ///
@@ -146,7 +184,7 @@ impl CRU {
     }
 }
 
-/// This module contains the bit field definitions for the CRU_CLKSEL_CON28 register.
+/// This module contains the bit field definitions for the `CRU_CLKSEL_CON28` register.
 /// It defines the positions and masks for various clock selection bits.
 pub mod cru_clksel_con28_bits {
     pub const CRU_CLKSEL_CON28_WR_EN_POS: u32 = 16;
@@ -187,9 +225,9 @@ pub mod cru_clksel_con28_bits {
 
 use cru_clksel_con28_bits::*;
 
-/// Implemented read, write, and other operation interfaces corresponding to each bit in the CRU_CLKSEL_CON28 register.
-/// - The definition of the bit is in the cru_clksel_con28_bits module.
-/// - The CRU_CLKSEL_CON28 register is used to select the clock source for various peripherals.
+/// Implemented read, write, and other operation interfaces corresponding to each bit in the `CRU_CLKSEL_CON28` register.
+/// - The definition of the bit is in the `cru_clksel_con28_bits` module.
+/// - The `CRU_CLKSEL_CON28` register is used to select the clock source for various peripherals.
 impl CRU {
     /// Set cclk_emmc clock
     ///
@@ -346,7 +384,7 @@ impl CRU {
     }
 }
 
-/// This module contains the bit field definitions for the CRU_GATE_CON09 register.
+/// This module contains the bit field definitions for the `CRU_GATE_CON09` register.
 /// It defines the positions and masks for various clock selection bits.
 pub mod cru_gate_con09_bits {
     pub const CRU_GATE_CON09_WR_EN_POS: u32 = 16;
@@ -392,9 +430,9 @@ pub mod cru_gate_con09_bits {
 
 use cru_gate_con09_bits::*;
 
-/// Implemented read, write, and other operation interfaces corresponding to each bit in the CRU_GATE_CON09 register.
-/// - The definition of the bit is in the cru_gate_con09_bits module.
-/// - The CRU_GATE_CON09 register is used to control the clock gating for various peripherals.
+/// Implemented read, write, and other operation interfaces corresponding to each bit in the `CRU_GATE_CON09` register.
+/// - The definition of the bit is in the `cru_gate_con09_bits` module.
+/// - The `CRU_GATE_CON09` register is used to control the clock gating for various peripherals.
 impl CRU {
     /// Enable clk_trng_ns
     ///
@@ -925,7 +963,7 @@ impl CRU {
     }
 }
 
-/// This module contains the bit field definitions for the CRU_SOFTRST_CON07 register.
+/// This module contains the bit field definitions for the `CRU_SOFTRST_CON07` register.
 /// It defines the positions and masks for various clock selection bits.
 pub mod cru_softrst_con07_bits {
     pub const CRU_SOFTRST_CON07_WR_EN_POS: u32 = 16;
@@ -965,9 +1003,9 @@ pub mod cru_softrst_con07_bits {
 
 use cru_softrst_con07_bits::*;
 
-/// Implemented read, write, and other operation interfaces corresponding to each bit in the CRU_SOFTRST_CON07 register.
-/// - The definition of the bit is in the cru_softrst_con07_bits module.
-/// - The CRU_SOFTRST_CON07 register is used to control the soft reset for various peripherals.
+/// Implemented read, write, and other operation interfaces corresponding to each bit in the `CRU_SOFTRST_CON07` register.
+/// - The definition of the bit is in the `cru_softrst_con07_bits` module.
+/// - The `CRU_SOFTRST_CON07` register is used to control the soft reset for various peripherals.
 impl CRU {
     /// Enable treset_emmc
     ///
@@ -1410,7 +1448,7 @@ impl CRU {
     }
 }
 
-/// This module contains the bit field definitions for the CRU_EMMC_CON0 register.
+/// This module contains the bit field definitions for the `CRU_EMMC_CON0` register.
 /// It defines the positions and masks for various clock selection bits.
 pub mod cru_emmc_con0_bits {
     pub const CRU_EMMC_CON0_WR_EN_POS: u32 = 16;
@@ -1432,9 +1470,9 @@ pub mod cru_emmc_con0_bits {
 
 use cru_emmc_con0_bits::*;
 
-/// Implemented read, write, and other operation interfaces corresponding to each bit in the CRU_EMMC_CON0 register.
-/// - The definition of the bit is in the cru_softrst_con07_bits module.
-/// - The CRU_EMMC_CON0 register is used to control some functions for EMMC.
+/// Implemented read, write, and other operation interfaces corresponding to each bit in the `CRU_EMMC_CON0` register.
+/// - The definition of the bit is in the `cru_emmc_con0_bits` module.
+/// - The `CRU_EMMC_CON0` register is used to control some functions for EMMC.
 impl CRU {
     /// Enable emmc_drv
     ///
@@ -1585,7 +1623,7 @@ impl CRU {
 
 }
 
-/// This module contains the bit field definitions for the CRU_EMMC_CON1 register.
+/// This module contains the bit field definitions for the `CRU_EMMC_CON1` register.
 /// It defines the positions and masks for various clock selection bits.
 pub mod cru_emmc_con1_bits {
     pub const CRU_EMMC_CON1_WR_EN_POS: u32 = 16;
@@ -1604,9 +1642,9 @@ pub mod cru_emmc_con1_bits {
 
 use cru_emmc_con1_bits::*;
 
-/// Implemented read, write, and other operation interfaces corresponding to each bit in the CRU_EMMC_CON1 register.
-/// - The definition of the bit is in the cru_softrst_con07_bits module.
-/// - The CRU_EMMC_CON1 register is used to control some functions for EMMC.
+/// Implemented read, write, and other operation interfaces corresponding to each bit in the `CRU_EMMC_CON1` register.
+/// - The definition of the bit is in the `cru_emmc_con1_bits` module.
+/// - The `CRU_EMMC_CON1` register is used to control some functions for EMMC.
 impl CRU {
     /// Enable emmc_sample
     ///
