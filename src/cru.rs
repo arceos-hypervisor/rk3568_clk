@@ -66,7 +66,7 @@
 //! For example,When power on or changing PLL setting, we must program PLL into slow mode or deep slow mode.
 //! 
 //! This module provides a basic interface for reading and writing CRU registers. DO NOT include
-//! special processing procedures, instead, the user should implement the special processing procedures
+//! special processing procedures, instead, the user should implement the special processing procedures.
 
 use core::ptr::{read_volatile, write_volatile};
 
@@ -1681,8 +1681,8 @@ impl CRU {
     /// - None
     ///
     /// # Returns
-    /// - true if treset_emmc is enabled
-    /// - false if treset_emmc is disabled
+    /// - true if emmc_sample is enabled
+    /// - false if emmc_sample is disabled
     pub fn cru_emmc_sample_is_enabled(&self) -> bool {
         unsafe {
             let addr = &(*self.reg).emmc_con[1] as *const u32 as u64;

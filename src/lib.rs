@@ -35,7 +35,8 @@
 //! use rk3568_clk::cru::cru_gate_con09_bits::{*};
 //! 
 //! let clock = CRU::new(clk_addr as u64);
-//! clock.clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M);
+//! clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M);
+//! clock.cru_enable_tclk_emmc();
 //! ```
 
 #![no_std]
