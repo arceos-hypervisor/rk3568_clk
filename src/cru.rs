@@ -5,7 +5,14 @@
 //! The CRU is an APB slave module that is designed for generating all of the internal and 
 //! system clocks, resets in the chip. CRU generates system clocks from PLL output clock or 
 //! external clock source, and generates system reset from external power-on-reset, watchdog 
-//! timer reset or software reset or temperature sensor.
+//! timer reset or software reset or temperature sensor.The CRU islocated at several addresses. 
+//! - PMUCRU, used for always on system, with base address 0xFDD00000 
+//! - PMUSCRU, used for always on secure system, with base address 0xFDD30000 
+//! - CRU, used for general system except always on system, with base address 0xFDD20000 
+//! - SCRU, used for general secure system except always on system, with base address 0xFDD10000
+//! 
+//! # Block Diagram
+//! 
 //! The CRU comprises with: 
 //! - PLL 
 //! - Register configuration unit 
@@ -30,6 +37,7 @@ use core::ptr::{read_volatile, write_volatile};
 /// Clock and Reset Unit (CRU) register map
 /// this struct defines the layout of the CRU registers in memory.
 /// It is used to access the CRU registers in a safe and efficient manner.
+/// There are a total of 240 registers in the CRU, each 4 bytes wide.
 #[repr(C)]
 struct RegMap {
     cru_apll_con: [u32; 5],             // APLL 寄存器 /* 0x0000 ~ 0x0014 */

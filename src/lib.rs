@@ -14,13 +14,6 @@
 //! buffers, inverters, and multiplexers. The clock tree is also responsible for
 //! generating different clock frequencies for different components in the system.
 //! 
-//! # RK3568
-//! The RK3568 is a high-performance SoC designed for a wide range of applications,
-//! including AI, machine learning, and multimedia processing. The RK3568 features
-//! a powerful CPU, GPU, and DSP, as well as a variety of peripherals and interfaces.
-//! The RK3568 is designed to be highly configurable and scalable, making it suitable
-//! for a wide range of applications.
-//! 
 //! ## CRU
 //! The Clock Reset Unit (CRU) is responsible for managing the clock and reset signals
 //! for the various components in the RK3568 SoC. The CRU is responsible for generating
