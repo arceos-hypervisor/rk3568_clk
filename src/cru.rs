@@ -168,7 +168,7 @@ impl CRU {
     /// # Returns
     /// - The value read from the register.
     fn read_reg(&self, addr: u64) -> u32 {
-        unsafe { read_volatile(addr as *const u64) as u32 }
+        unsafe { read_volatile(addr as *const u32) as u32 }
     }
 
     /// Writes a 32-bit value to the register at the given address.
@@ -1514,7 +1514,7 @@ impl CRU {
     pub fn cru_emmc_drv_is_enabled(&self) -> bool {
         unsafe {
             let addr = &(*self.reg).emmc_con[0] as *const u32 as u64;
-            (self.read_reg(addr) & CRU_EMMC_DRV) == 0
+            (self.read_reg(addr) & CRU_EMMC_DRV) == CRU_EMMC_DRV
         }
     }
 
@@ -1616,7 +1616,7 @@ impl CRU {
     pub fn cru_emmc_init_state_is_enabled(&self) -> bool {
         unsafe {
             let addr = &(*self.reg).emmc_con[0] as *const u32 as u64;
-            (self.read_reg(addr) & CRU_EMMC_INIT_STATE) == 0
+            (self.read_reg(addr) & CRU_EMMC_INIT_STATE) == CRU_EMMC_INIT_STATE
         }
     }
 
@@ -1686,7 +1686,7 @@ impl CRU {
     pub fn cru_emmc_sample_is_enabled(&self) -> bool {
         unsafe {
             let addr = &(*self.reg).emmc_con[1] as *const u32 as u64;
-            (self.read_reg(addr) & CRU_EMMC_SAMPLE) == 0
+            (self.read_reg(addr) & CRU_EMMC_SAMPLE) == CRU_EMMC_SAMPLE
         }
     }
 

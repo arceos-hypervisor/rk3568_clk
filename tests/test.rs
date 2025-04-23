@@ -6,12 +6,11 @@ extern crate alloc;
 
 #[bare_test::tests]
 mod tests {
-    use bare_test::{globals::{global_val, PlatformInfoKind}, mem::iomap, platform::page_size, println};
-    use fdt_parser::PciSpace;
-    use log::{debug, info, warn};
+    use bare_test::{globals::{global_val, PlatformInfoKind}, mem::iomap, println};
+    use log::info;
     use rk3568_clk::cru::CRU;
     use rk3568_clk::cru::cru_clksel_con28_bits::{*};
-    use rk3568_clk::cru::cru_gate_con09_bits::{*};
+    // use rk3568_clk::cru::cru_gate_con09_bits::{*};
 
     #[test]
     fn test_platform() {
@@ -64,5 +63,29 @@ mod tests {
         info!("clock.cru_clksel_get_cclk_emmc(): {:#x}", clock.cru_clksel_get_cclk_emmc());
         clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_CPL_DIV_100M);
         info!("clock.cru_clksel_get_cclk_emmc(): {:#x}", clock.cru_clksel_get_cclk_emmc());
+
+        clock.cru_enable_tclk_emmc();
+        info!("clock.cru_enable_tclk_emmc(): { }", clock.cru_tclk_emmc_is_enabled());
+        clock.cru_disable_tclk_emmc();
+        info!("clock.cru_disable_tclk_emmc(): { }", clock.cru_tclk_emmc_is_enabled());
+
+        clock.cru_enable_treset_emmc();
+        info!("clock.cru_enable_treset_emmc(): { }", clock.cru_treset_emmc_is_finished());
+        clock.cru_disable_treset_emmc();
+        info!("clock.cru_disable_treset_emmc(): { }", clock.cru_treset_emmc_is_finished());
+
+        clock.cru_enable_emmc_drv();
+        info!("clock.cru_enable_emmc_drv(): { }", clock.cru_emmc_drv_is_enabled());
+        clock.cru_disable_emmc_drv();
+        info!("clock.cru_disable_emmc_drv(): { }", clock.cru_emmc_drv_is_enabled());
+        clock.cru_set_emmc_drv_delaynum(0x0f);
+        info!("clock.cru_set_emmc_drv_delaynum(): {:#x}", clock.cru_get_emmc_drv_delaynum());
+        clock.cru_set_emmc_drv_delaynum(0x00);
+        info!("clock.cru_set_emmc_drv_delaynum(): {:#x}", clock.cru_get_emmc_drv_delaynum());
+
+        clock.cru_enable_emmc_sample();
+        info!("clock.cru_enable_emmc_sample(): { }", clock.cru_emmc_sample_is_enabled());
+        clock.cru_disable_emmc_sample();
+        info!("clock.cru_disable_emmc_sample(): { }", clock.cru_emmc_sample_is_enabled());
     }
 }
