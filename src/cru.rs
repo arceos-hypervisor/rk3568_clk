@@ -11,6 +11,8 @@
 //! - CRU, used for general system except always on system, with base address 0xFDD20000 
 //! - SCRU, used for general secure system except always on system, with base address 0xFDD10000
 //! 
+//! **NOTE:** Currently, only CUR is supported.
+//! 
 //! ## Block Diagram
 //! 
 //! The CRU comprises with: 
@@ -50,19 +52,22 @@
 //! 
 //! The driver provides a safe interface to the CRU registers. It allows reading and
 //! writing to the registers, as well as setting and getting specific bits in the
-//! registers. The driver uses the `read_volatile` and `write_volatile` functions to
+//! registers. 
+//! 
+//! The driver uses the `read_volatile()` and `write_volatile()` functions to
 //! read and write to the registers. These functions are used to ensure that the
-//! compiler does not optimize away the read and write operations. The driver also
-//! provides functions to set and clear specific bits in the registers. These functions
-//! are used to ensure that the compiler does not optimize away the read and write
-//! operations.
+//! compiler does not optimize away the read and write operations. 
+//! 
+//! The driver also provides functions to set and clear specific bits in the registers. 
+//! These functions are used to ensure that the compiler does not optimize away 
+//! the read and write operations.
 //! 
 //! For one register, the follwing modules are defined:
 //! - `pub mod cru_*_bits`：define the bit field definitions for the CRU registers.
 //! - `impl CRU {}` : implemented read, write, and other operation interfaces corresponding to each register.
 //! 
-//! Some registers can not be accessed by the driver due to soc work mode. Otherwise, 
-//! Reading and writing certain registers requires special processing procedures. 
+//! **It is particularly important to note that** some registers can not be accessed by the driver 
+//! due to soc work mode. Otherwise, Reading and writing certain registers requires special processing procedures. 
 //! For example,When power on or changing PLL setting, we must program PLL into slow mode or deep slow mode.
 //! 
 //! This module provides a basic interface for reading and writing CRU registers. DO NOT include
