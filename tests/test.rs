@@ -8,8 +8,8 @@ extern crate alloc;
 mod tests {
     use bare_test::{globals::{global_val, PlatformInfoKind}, mem::iomap, println};
     use log::info;
-    use rk3568_clk::cru::CRU;
-    use rk3568_clk::cru::cru_clksel_con28_bits::{*};
+    use rk3568_clk::CRU;
+    use rk3568_clk::cru_clksel_con28_bits::{*};
     // use rk3568_clk::cru::cru_gate_con09_bits::{*};
 
     #[test]

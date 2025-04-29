@@ -30,9 +30,8 @@
 //! ## Usage
 //! 
 //! ```rust
-//! use rk3568_clk::cru::CRU;
-//! use rk3568_clk::cru::cru_clksel_con28_bits::{*};
-//! use rk3568_clk::cru::cru_gate_con09_bits::{*};
+//! use rk3568_clk::CRU;
+//! use rk3568_clk::cru_clksel_con28_bits::{*};
 //! 
 //! let clock = CRU::new(clk_addr as u64);
 //! clock.cru_clksel_set_cclk_emmc(CRU_CLKSEL_CCLK_EMMC_GPL_DIV_200M);
@@ -43,4 +42,6 @@
 #![no_main]
 #![feature(alloc_error_handler)]
 
-pub mod cru;
+/// By re-exporting, the cru-level Module is shielded.
+mod cru;
+pub use cru::*;
