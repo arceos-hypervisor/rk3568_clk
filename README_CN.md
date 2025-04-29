@@ -6,7 +6,7 @@
 
 <h2 align="center">RK3568_CLK</h1>
 
-<p align="center">The clock driver for RK3568 written in Rust</p>
+<p align="center">使用 Rust 编写的用于 RK3568 的 CLK 驱动</p>
 
 <div align="center">
 
@@ -16,19 +16,19 @@
 
 </div>
 
-English | [中文](README_CN.md)
+[English](README.md) | 中文
 
-# Introduction
+# 简介
 
-For detailed instructions, see the comments in the code. Alternatively, first use `cargo doc --open` to generate the documentation and then view it.
+详细说明见代码中的注释。或者先使用 `cargo doc --open` 来生成文档后查看。
 
-## Contributing
+## 如何贡献
 
-Feel free to fork this repository and submit a PR.
+欢迎 FORK 本仓库，然后提交 PR。
 
-## License
+## 许可协议
 
-AxVisor Book uses the following open-source license:
+AxVisor Book 使用如下开源协议：
 
  * Apache-2.0
  * MulanPubL-2.0
