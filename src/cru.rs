@@ -139,20 +139,6 @@ pub struct CRU {
     reg: AtomicPtr<RegMap>,
 }
 
-pub struct CRUT {
-    base_addr: u64,
-}
-
-impl CRUT {
-    pub fn new(base_addr: u64) -> Self {
-        Self { base_addr }
-    }
-
-    pub fn get_base_addr(&self) -> u64 {
-        self.base_addr
-    }
-}
-
 /// Implementing the most basic interface
 /// - Creates a new instance of the CRU struct.
 /// - Based function to read and write registers.
