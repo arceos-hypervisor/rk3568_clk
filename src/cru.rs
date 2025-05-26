@@ -75,23 +75,6 @@
 
 use core::ptr::{read_volatile, write_volatile};
 
-/// RK3568 eMMC时钟源选择常量
-const CCLK_EMMC_SEL_24M: u32 = 0;  // OSC (24MHz)
-const CCLK_EMMC_SEL_200M: u32 = 1; // 200 MHz
-const CCLK_EMMC_SEL_150M: u32 = 2; // 150 MHz
-const CCLK_EMMC_SEL_100M: u32 = 3; // 100 MHz
-const CCLK_EMMC_SEL_50M: u32 = 4;  // 50 MHz
-const CCLK_EMMC_SEL_375K: u32 = 5; // 375 KHz
-
-/// 频率常量
-const MHZ: u32 = 1_000_000;
-const KHZ: u32 = 1_000;
-const OSC_HZ: u32 = 24 * MHZ;      // 24 MHz
-
-/// eMMC时钟选择掩码和偏移
-const CCLK_EMMC_SEL_MASK: u32 = 0x7 << CCLK_EMMC_SEL_SHIFT;
-const CCLK_EMMC_SEL_SHIFT: u32 = 12;
-
 /// Clock and Reset Unit (CRU) register map
 /// this struct defines the layout of the CRU registers in memory.
 /// It is used to access the CRU registers in a safe and efficient manner.
@@ -268,7 +251,7 @@ impl CRU {
     ///
     /// # Returns
     /// - None
-    pub fn emmc_set_clk(&self, sel: u32) {
+    pub fn cru_clksel_set_cclk_emmc(&self, sel: u32) {
         let reg_map = self.base_addr as *mut RegMap;
         let addr = unsafe { &mut (*reg_map).clksel_con[28] as *mut u32 as u64 };
 
@@ -280,38 +263,6 @@ impl CRU {
                 | (CRU_CLKSEL_CCLK_EMMC_MASK << CRU_CLKSEL_CON28_WR_EN_POS)
                 | sel,
         );
-    }
-
-    /// 设置eMMC时钟频率
-    pub fn cru_clksel_set_cclk_emmc(&self, rate: u32) -> u32 {    
-        info!("Setting eMMC clock to {} Hz", rate);    
-        let src_clk = match rate {
-            OSC_HZ => CCLK_EMMC_SEL_24M,
-            r if r == 52 * MHZ || r == 50 * MHZ => CCLK_EMMC_SEL_50M,
-            r if r == 100 * MHZ => CCLK_EMMC_SEL_100M,
-            r if r == 150 * MHZ => CCLK_EMMC_SEL_150M,
-            r if r == 200 * MHZ => CCLK_EMMC_SEL_200M,
-            r if r == 400 * KHZ || r == 375 * KHZ => CCLK_EMMC_SEL_375K,
-            _ => panic!("Unsupported eMMC clock rate: {} Hz", rate),
-        };
-        
-        unsafe {
-            let addr = &mut (*((self.base_addr) as *mut RegMap)).clksel_con[28];
-
-            pub fn rk_clrsetreg(addr: *mut u32, clr: u32, set: u32) {
-                let val = ((clr | set) << 16) | set;
-
-                unsafe { write_volatile(addr, val) };
-            }        
-
-            rk_clrsetreg(
-                addr,
-                CCLK_EMMC_SEL_MASK,
-                src_clk << CCLK_EMMC_SEL_SHIFT
-            );
-        }
-        
-        self.cru_clksel_get_cclk_emmc()
     }
 
     /// Get cclk_emmc clock
@@ -327,26 +278,10 @@ impl CRU {
     /// - CRU_CLKSEL_CCLK_EMMC_CPL_DIV_100M
     /// - CRU_CLKSEL_CCLK_EMMC_CPL_DIV_50M
     /// - CRU_CLKSEL_CCLK_EMMC_SOC0_375K
-    pub fn emmc_get_clk(&self) -> u32 {
-        let reg_map = self.base_addr as *mut RegMap;
+    pub fn cru_clksel_get_cclk_emmc(&self) -> u32 {
+        let reg_map: *mut RegMap = self.base_addr as *mut RegMap;
         let addr = unsafe { &mut (*reg_map).clksel_con[28] as *mut u32 as u64 };
         self.read_reg(addr) & CRU_CLKSEL_CCLK_EMMC
-    }
-
-    pub fn cru_clksel_get_cclk_emmc(&self) -> u32 {
-        let con: u32 = unsafe { read_volatile(&(*((self.base_addr) as *mut RegMap)).clksel_con[28]) };
-        
-        let sel = (con & CCLK_EMMC_SEL_MASK) >> CCLK_EMMC_SEL_SHIFT;
-        
-        match sel {
-            CCLK_EMMC_SEL_200M => 200 * MHZ,
-            CCLK_EMMC_SEL_150M => 150 * MHZ,
-            CCLK_EMMC_SEL_100M => 100 * MHZ,
-            CCLK_EMMC_SEL_50M => 50 * MHZ,
-            CCLK_EMMC_SEL_375K => 375 * KHZ,
-            CCLK_EMMC_SEL_24M => OSC_HZ,
-            _ => panic!("Invalid eMMC clock selection: {:#x}", sel),
-        }
     }
 
     /// Set bclk_emmc clock
